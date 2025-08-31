@@ -1,2 +1,58 @@
-local hi = "hi"
-print(hi)
+-- GameHub Loader
+local supportedGames = {
+    [142823291] = "Murder Mystery 2",   -- MM2
+    [6872265039] = "BedWars"           -- BedWars
+}
+
+local placeId = game.PlaceId
+
+if not supportedGames[placeId] then
+    game.Players.LocalPlayer:Kick("This game is not supported by Alan's Hub")
+    return
+end
+
+-- Simple GUI
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+-- Remove old GUI
+if PlayerGui:FindFirstChild("GameHubGUI") then
+    PlayerGui.GameHubGUI:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "GameHubGUI"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0.3,0,0.4,0)
+MainFrame.Position = UDim2.new(0.35,0,0.3,0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MainFrame.BorderSizePixel = 0
+
+local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0,12)
+
+-- Title
+local title = Instance.new("TextLabel", MainFrame)
+title.Text = "Alan's Hub - "..supportedGames[placeId]
+title.Size = UDim2.new(1,0,0,50)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+
+-- Example button
+local btn = Instance.new("TextButton", MainFrame)
+btn.Text = "Placeholder Action"
+btn.Size = UDim2.new(0.8,0,0,50)
+btn.Position = UDim2.new(0.1,0,0.3,0)
+btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+btn.TextColor3 = Color3.fromRGB(255,255,255)
+local corner2 = Instance.new("UICorner", btn)
+corner2.CornerRadius = UDim.new(0,10)
+
+btn.MouseButton1Click:Connect(function()
+    print("Button clicked in "..supportedGames[placeId])
+    -- Example: you could put a loadstring here for the actual script
+end)
