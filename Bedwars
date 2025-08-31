@@ -1,236 +1,228 @@
+-- Load WindUI
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
+
 local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+local PlaceId = game.PlaceId
 
--- Remove old GUI
-if PlayerGui:FindFirstChild("DevExploitSimulator") then
-    PlayerGui.DevExploitSimulator:Destroy()
+-- Supported games
+local supportedGames = {
+    [537413528] = "Ninja Legends",
+    [142823291] = "Murder Mystery 2",
+}
+
+if not supportedGames[PlaceId] then
+    warn("Game not supported.")
+    return
 end
 
--- ScreenGui
-local ScreenGui = Instance.new("ScreenGui", PlayerGui)
-ScreenGui.Name = "DevExploitSimulator"
-ScreenGui.ResetOnSpawn = false
+print("Running in:", supportedGames[PlaceId])
 
--- Main Frame
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0.8,0,0.7,0)
-MainFrame.Position = UDim2.new(0.1,0,0.15,0)
-MainFrame.AnchorPoint = Vector2.new(0,0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-MainFrame.BorderSizePixel = 0
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,15)
+-- Create Window
+local Window = WindUI:CreateWindow({
+    Title = "Kat X",
+    Icon = "door-open",
+    Author = "by .Nusa!",
+    Folder = "Kat X V1.7",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 200,
+    BackgroundImageTransparency = 0.42,
+    HideSearchBar = true,
+    ScrollBarEnabled = true,
+})
 
--- Title
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1,0,0,50)
-Title.Position = UDim2.new(0,0,0,0)
-Title.Text = "Exploit Simulator (Studio)"
-Title.Font = Enum.Font.GothamBold
-Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.TextScaled = true
-Title.BackgroundTransparency = 1
+-- Tabs
+local mm2Tab = Window:CreateTab("MM2 Tools")
+local visTab = Window:CreateTab("Visuals")
+local miscTab = Window:CreateTab("Misc")
 
--- Toggle Button (Top Center)
-local ToggleBtn = Instance.new("TextButton", ScreenGui)
-ToggleBtn.Size = UDim2.new(0,50,0,50)
-ToggleBtn.Position = UDim2.new(0.5,0,0.02,0)
-ToggleBtn.AnchorPoint = Vector2.new(0.5,0)
-ToggleBtn.Text = "X"
-ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
-ToggleBtn.BorderSizePixel = 0
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,25)
+-- === ESP / Role Highlights ===
+local highlights = {}
+local highlightEnabled = false
+local colors = {
+    Murderer = Color3.fromRGB(255, 75, 75),
+    Sheriff  = Color3.fromRGB(75, 170, 255),
+    Innocent = Color3.fromRGB(80, 255, 120),
+}
 
-local guiVisible = true
-ToggleBtn.MouseButton1Click:Connect(function()
-    guiVisible = not guiVisible
-    MainFrame.Visible = guiVisible
-end)
-
--- Buttons Frame
-local ButtonsFrame = Instance.new("ScrollingFrame", MainFrame)
-ButtonsFrame.Size = UDim2.new(1,-20,1,-70)
-ButtonsFrame.Position = UDim2.new(0,10,0,60)
-ButtonsFrame.BackgroundTransparency = 1
-ButtonsFrame.ScrollBarThickness = 10
-local UIListLayout = Instance.new("UIListLayout", ButtonsFrame)
-UIListLayout.Padding = UDim.new(0,10)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Helper: Create Button
-local function CreateButton(name, callback)
-    local btn = Instance.new("TextButton", ButtonsFrame)
-    btn.Text = name
-    btn.Size = UDim2.new(1,0,0,50)
-    btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Font = Enum.Font.Gotham
-    btn.TextScaled = true
-    btn.BorderSizePixel = 0
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
-    btn.MouseButton1Click:Connect(callback)
+local function ensureHighlight(plr)
+    local char = plr.Character
+    if not char then return end
+    if highlights[plr] then return highlights[plr] end
+    local h = Instance.new("Highlight")
+    h.FillTransparency = 0.6
+    h.OutlineTransparency = 0
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.Parent = char
+    h.Adornee = char
+    highlights[plr] = h
+    return h
 end
 
--- Player reference
-local function getChar()
-    return player.Character or player.CharacterAdded:Wait()
+local function updateHighlight(plr)
+    local h = highlights[plr]
+    if not h then return end
+    local role = plr.Character and plr.Character:GetAttribute("Role") or "Innocent"
+    h.FillColor = colors[role] or Color3.fromRGB(200, 200, 200)
+    h.Enabled = highlightEnabled
 end
 
--- Safe Speed Hack Toggle
-local speedOn = false
-CreateButton("Toggle Speed Hack", function()
-    local char = getChar()
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        speedOn = not speedOn
-        hum.WalkSpeed = speedOn and 32 or 16
-    end
-end)
-
--- Safe Jump Boost Toggle
-local jumpOn = false
-CreateButton("Toggle Jump Boost", function()
-    local char = getChar()
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        jumpOn = not jumpOn
-        hum.JumpPower = jumpOn and 75 or 50
-    end
-end)
-
--- Hitbox Expander slider + input
-local hitboxOn = false
-local hitboxes = {}
-local hitboxSize = 5 -- default
-local function createHitboxForPlayer(p)
-    if hitboxes[p] then hitboxes[p]:Destroy() end
-    if p == player then return end
-    local char = p.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local box = Instance.new("Part")
-        box.Name = "DevHitbox"
-        box.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-        box.Transparency = 0.75
-        box.CanCollide = false
-        box.Anchored = false
-        box.Parent = char
-        local weld = Instance.new("WeldConstraint")
-        weld.Part0 = box
-        weld.Part1 = char.HumanoidRootPart
-        weld.Parent = box
-        hitboxes[p] = box
-    end
-end
-
-local function toggleHitboxExpander()
-    hitboxOn = not hitboxOn
-    for _,p in pairs(Players:GetPlayers()) do
-        if hitboxOn then
-            createHitboxForPlayer(p)
-        else
-            if hitboxes[p] then
-                hitboxes[p]:Destroy()
-                hitboxes[p] = nil
+mm2Tab:CreateToggle("Show Roles (ESP)", false, function(state)
+    highlightEnabled = state
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player then
+            if state then
+                ensureHighlight(plr)
+                updateHighlight(plr)
+            else
+                if highlights[plr] then
+                    highlights[plr]:Destroy()
+                    highlights[plr] = nil
+                end
             end
         end
     end
+end)
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        if highlightEnabled then
+            ensureHighlight(plr)
+            updateHighlight(plr)
+        end
+    end)
+end)
+
+RunService.Heartbeat:Connect(function()
+    if not highlightEnabled then return end
+    for plr, _ in pairs(highlights) do
+        pcall(function()
+            updateHighlight(plr)
+        end)
+    end
+end)
+
+-- === Gun Drop Indicator ===
+local gunBillboards = {}
+local function attachBillboard(part)
+    local bb = Instance.new("BillboardGui")
+    bb.AlwaysOnTop = true
+    bb.Size = UDim2.fromOffset(120, 36)
+    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+    bb.Parent = part
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.fromScale(1, 1)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 18
+    label.Text = "GUN HERE"
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.Parent = bb
+    gunBillboards[part] = bb
 end
 
--- Slider Frame
-local SliderFrame = Instance.new("Frame", ButtonsFrame)
-SliderFrame.Size = UDim2.new(1,0,0,60)
-SliderFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
-Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0,10)
-
-local SliderLabel = Instance.new("TextLabel", SliderFrame)
-SliderLabel.Size = UDim2.new(0.4,0,1,0)
-SliderLabel.Text = "Hitbox Size"
-SliderLabel.TextColor3 = Color3.fromRGB(255,255,255)
-SliderLabel.BackgroundTransparency = 1
-SliderLabel.TextScaled = true
-
-local SliderValue = Instance.new("TextBox", SliderFrame)
-SliderValue.Size = UDim2.new(0.2,0,1,0)
-SliderValue.Position = UDim2.new(0.45,0,0,0)
-SliderValue.Text = tostring(hitboxSize)
-SliderValue.ClearTextOnFocus = false
-SliderValue.TextScaled = true
-
--- Slider Bar (click/drag)
-local SliderBar = Instance.new("Frame", SliderFrame)
-SliderBar.Size = UDim2.new(0.3,0,0.3,0)
-SliderBar.Position = UDim2.new(0.7,0,0.35,0)
-SliderBar.BackgroundColor3 = Color3.fromRGB(100,100,100)
-Instance.new("UICorner", SliderBar).CornerRadius = UDim.new(0,5)
-
-local UserInputService = game:GetService("UserInputService")
-
-local function updateHitboxSize(newSize)
-    hitboxSize = math.clamp(newSize, 1, 10)
-    SliderValue.Text = tostring(hitboxSize)
-    if hitboxOn then
-        for _,p in pairs(hitboxes) do
-            if p then p.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize) end
+local function scanForGun()
+    local tagged = CollectionService:GetTagged("GunDrop")
+    if #tagged > 0 then return tagged end
+    local found = {}
+    for _, inst in ipairs(workspace:GetDescendants()) do
+        if inst:IsA("Tool") and inst.Name:lower() == "gun" and inst.Parent == workspace then
+            table.insert(found, inst)
         end
     end
+    return found
 end
 
--- When typing in box
-SliderValue.FocusLost:Connect(function(enterPressed)
-    local val = tonumber(SliderValue.Text)
-    if val then updateHitboxSize(val) end
-end)
-
--- Slider drag
-local dragging = false
-SliderBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-    end
-end)
-SliderBar.InputEnded:Connect(function(input)
-    dragging = false
-end)
-RunService.RenderStepped:Connect(function()
-    if dragging then
-        local mouse = player:GetMouse()
-        local relX = math.clamp((mouse.X - SliderFrame.AbsolutePosition.X)/SliderFrame.AbsoluteSize.X, 0, 1)
-        local newSize = relX * 10
-        updateHitboxSize(newSize)
-    end
-end)
-
--- Hitbox Toggle Button
-CreateButton("Toggle Hitbox Expander", toggleHitboxExpander)
-
--- ESP System (updates every second)
-local espParts = {}
-local function createESP(player)
-    if player == player then return end
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local box = Instance.new("BoxHandleAdornment")
-        box.Adornee = char.HumanoidRootPart
-        box.Size = Vector3.new(2,5,1)
-        box.Color3 = Color3.fromRGB(255,0,0)
-        box.Transparency = 0.5
-        box.AlwaysOnTop = true
-        box.Parent = ScreenGui
-        espParts[player] = box
-    end
-end
-
-local function updateESP()
-    for _,p in pairs(Players:GetPlayers()) do
-        if not espParts[p] then createESP(p) end
-    end
-    for p,box in pairs(espParts) do
-        if not p.Parent then
-            box:Destroy()
-            espParts[p] = nil
+local gunConn
+mm2Tab:CreateToggle("Gun Drop Indicator", false, function(state)
+    if state then
+        gunConn = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                local guns = scanForGun()
+                for _, g in ipairs(guns) do
+                    if not gunBillboards[g] then
+                        local part = g:FindFirstChild("Handle") or g
+                        attachBillboard(part)
+                    end
+                end
+                for inst, bb in pairs(gunBillboards) do
+                    if not inst.Parent then
+                        bb:Destroy()
+                        gunBillboards[inst] = nil
+                    end
+                end
+            end)
+        end)
+    else
+        if gunConn then gunConn:Disconnect() end
+        for _, bb in pairs(gunBillboards) do
+            bb:Destroy()
         end
+        gunBillboards = {}
+    end
+end)
+
+-- === Movement Tweaks ===
+local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+mm2Tab:CreateSlider("WalkSpeed", 8, 100, hum and hum.WalkSpeed or 16, function(v)
+    pcall(function()
+        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if h then h.WalkSpeed = v end
+    end)
+end)
+
+mm2Tab:CreateSlider("Jump Power", 50, 200, hum and hum.JumpPower or 50, function(v)
+    pcall(function()
+        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if h then h.JumpPower = v end
+    end)
+end)
+
+-- === Visuals ===
+local cam = workspace.CurrentCamera
+visTab:CreateSlider("FOV", 50, 120, cam.FieldOfView, function(v)
+    pcall(function()
+        cam.FieldOfView = v
+    end)
+end)
+
+local crosshair = Instance.new("Frame")
+crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
+crosshair.Position = UDim2.fromScale(0.5, 0.5)
+crosshair.Size = UDim2.fromOffset(2, 2)
+crosshair.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+crosshair.Visible = false
+crosshair.Parent = player:WaitForChild("PlayerGui")
+
+visTab:CreateToggle("Crosshair", false, function(state)
+    crosshair.Visible = state
+end)
+
+-- === Round Timer ===
+local timerLabel = miscTab:CreateLabel("Round: --:--")
+local function fmt(t)
+    local m = math.floor(t / 60)
+    local s = t % 60
+    return string.format("%02d:%02d", m, s)
+end
+
+local function bindRoundTimer()
+    local roundVal = ReplicatedStorage:FindFirstChild("RoundTime")
+    if roundVal and roundVal:IsA("NumberValue") then
+        roundVal:GetPropertyChangedSignal("Value"):Connect(function()
+            timerLabel:SetText("Round: " .. fmt(math.max(0, math.floor(roundVal.Value))))
+        end)
+        timerLabel:SetText("Round: " .. fmt(math.floor(roundVal.Value)))
+    else
+        timerLabel:SetText("Round: --:--")
     end
 end
-RunService.RenderStepped:Connect(updateESP)
+bindRoundTimer()
