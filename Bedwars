@@ -1,1 +1,2 @@
 local hi = "hi"
+print(hi)
