@@ -1,58 +1,128 @@
--- GameHub Loader
-local supportedGames = {
-    [142823291] = "Murder Mystery 2",   -- MM2
-    [6872265039] = "BedWars"           -- BedWars
-}
-
-local placeId = game.PlaceId
-
-if not supportedGames[placeId] then
-    game.Players.LocalPlayer:Kick("This game is not supported by Alan's Hub")
-    return
-end
-
--- Simple GUI
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
--- Remove old GUI
-if PlayerGui:FindFirstChild("GameHubGUI") then
-    PlayerGui.GameHubGUI:Destroy()
+-- Remove old panel if exists
+if PlayerGui:FindFirstChild("DevExploitSimulator") then
+    PlayerGui.DevExploitSimulator:Destroy()
 end
 
+-- ScreenGui
 local ScreenGui = Instance.new("ScreenGui", PlayerGui)
-ScreenGui.Name = "GameHubGUI"
+ScreenGui.Name = "DevExploitSimulator"
+ScreenGui.ResetOnSpawn = false
 
+-- Main Frame
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0.3,0,0.4,0)
-MainFrame.Position = UDim2.new(0.35,0,0.3,0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MainFrame.Size = UDim2.new(0, 250, 0, 300)
+MainFrame.Position = UDim2.new(0, 20, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
 
 local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0,12)
+UICorner.CornerRadius = UDim.new(0, 12)
 
 -- Title
-local title = Instance.new("TextLabel", MainFrame)
-title.Text = "Alan's Hub - "..supportedGames[placeId]
-title.Size = UDim2.new(1,0,0,50)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(255,255,255)
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "Exploit Simulator (Studio)"
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextScaled = true
+Title.BackgroundTransparency = 1
 
--- Example button
-local btn = Instance.new("TextButton", MainFrame)
-btn.Text = "Placeholder Action"
-btn.Size = UDim2.new(0.8,0,0,50)
-btn.Position = UDim2.new(0.1,0,0.3,0)
-btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-btn.TextColor3 = Color3.fromRGB(255,255,255)
-local corner2 = Instance.new("UICorner", btn)
-corner2.CornerRadius = UDim.new(0,10)
+-- Buttons Frame
+local ButtonsFrame = Instance.new("Frame", MainFrame)
+ButtonsFrame.Size = UDim2.new(1, -20, 1, -50)
+ButtonsFrame.Position = UDim2.new(0, 10, 0, 50)
+ButtonsFrame.BackgroundTransparency = 1
 
-btn.MouseButton1Click:Connect(function()
-    print("Button clicked in "..supportedGames[placeId])
-    -- Example: you could put a loadstring here for the actual script
+local UIListLayout = Instance.new("UIListLayout", ButtonsFrame)
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.FillDirection = Enum.FillDirection.Vertical
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Helper: Create button
+local function CreateButton(name, callback)
+    local btn = Instance.new("TextButton", ButtonsFrame)
+    btn.Text = name
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.Gotham
+    btn.TextScaled = true
+    btn.BorderSizePixel = 0
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 8)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Player Reference
+local function getChar()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+-- Speed Hack Simulation
+local speedOn = false
+CreateButton("Toggle Speed Hack", function()
+    local char = getChar()
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            speedOn = not speedOn
+            hum.WalkSpeed = speedOn and 100 or 16
+        end
+    end
+end)
+
+-- Jump Hack Simulation
+local jumpOn = false
+CreateButton("Toggle Jump Hack", function()
+    local char = getChar()
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            jumpOn = not jumpOn
+            hum.JumpPower = jumpOn and 200 or 50
+        end
+    end
+end)
+
+-- Hitbox Expansion Simulation
+local hitboxOn = false
+CreateButton("Toggle Hitbox Expand", function()
+    local char = getChar()
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hitboxOn = not hitboxOn
+            hrp.Size = hitboxOn and Vector3.new(10,10,10) or Vector3.new(2,2,1)
+        end
+    end
+end)
+
+-- Fake Hitbox Simulation
+local fakeOn = false
+local fakePart
+CreateButton("Toggle Fake Hitbox", function()
+    local char = getChar()
+    if char then
+        if not fakeOn then
+            fakePart = Instance.new("Part")
+            fakePart.Size = Vector3.new(10,10,10)
+            fakePart.Transparency = 0.5
+            fakePart.CanCollide = false
+            fakePart.Anchored = false
+            fakePart.Parent = char
+            fakePart.Name = "FakeHitbox"
+            fakePart.CFrame = char:WaitForChild("HumanoidRootPart").CFrame
+            local weld = Instance.new("WeldConstraint", fakePart)
+            weld.Part0 = fakePart
+            weld.Part1 = char:WaitForChild("HumanoidRootPart")
+        else
+            if fakePart then fakePart:Destroy() end
+        end
+        fakeOn = not fakeOn
+    end
 end)
