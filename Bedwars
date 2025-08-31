@@ -3,7 +3,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
--- Remove old GUI if exists
+-- Remove old GUI
 if PlayerGui:FindFirstChild("DevExploitSimulator") then
     PlayerGui.DevExploitSimulator:Destroy()
 end
@@ -20,9 +20,7 @@ MainFrame.Position = UDim2.new(0.1,0,0.15,0)
 MainFrame.AnchorPoint = Vector2.new(0,0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 MainFrame.BorderSizePixel = 0
-
-local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0,15)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,15)
 
 -- Title
 local Title = Instance.new("TextLabel", MainFrame)
@@ -43,8 +41,7 @@ ToggleBtn.Text = "X"
 ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
 ToggleBtn.BorderSizePixel = 0
-local Corner = Instance.new("UICorner", ToggleBtn)
-Corner.CornerRadius = UDim.new(0,25)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,25)
 
 local guiVisible = true
 ToggleBtn.MouseButton1Click:Connect(function()
@@ -58,7 +55,6 @@ ButtonsFrame.Size = UDim2.new(1,-20,1,-70)
 ButtonsFrame.Position = UDim2.new(0,10,0,60)
 ButtonsFrame.BackgroundTransparency = 1
 ButtonsFrame.ScrollBarThickness = 10
-
 local UIListLayout = Instance.new("UIListLayout", ButtonsFrame)
 UIListLayout.Padding = UDim.new(0,10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -73,59 +69,146 @@ local function CreateButton(name, callback)
     btn.Font = Enum.Font.Gotham
     btn.TextScaled = true
     btn.BorderSizePixel = 0
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0,10)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
     btn.MouseButton1Click:Connect(callback)
 end
 
--- Player Reference
+-- Player reference
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
 end
 
--- Safe Speed Hack Simulation (max 32 for Studio testing)
+-- Safe Speed Hack Toggle
 local speedOn = false
 CreateButton("Toggle Speed Hack", function()
     local char = getChar()
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            speedOn = not speedOn
-            hum.WalkSpeed = speedOn and 32 or 16
-        end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        speedOn = not speedOn
+        hum.WalkSpeed = speedOn and 32 or 16
     end
 end)
 
--- Safe Jump Hack Simulation (max 75 for Studio testing)
+-- Safe Jump Boost Toggle
 local jumpOn = false
 CreateButton("Toggle Jump Boost", function()
     local char = getChar()
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            jumpOn = not jumpOn
-            hum.JumpPower = jumpOn and 75 or 50
-        end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        jumpOn = not jumpOn
+        hum.JumpPower = jumpOn and 75 or 50
     end
 end)
 
--- Hitbox Expander (local only)
+-- Hitbox Expander slider + input
 local hitboxOn = false
-CreateButton("Toggle Hitbox Expand", function()
-    local char = getChar()
-    if char then
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hitboxOn = not hitboxOn
-            hrp.Size = hitboxOn and Vector3.new(5,5,3) or Vector3.new(2,2,1)
+local hitboxes = {}
+local hitboxSize = 5 -- default
+local function createHitboxForPlayer(p)
+    if hitboxes[p] then hitboxes[p]:Destroy() end
+    if p == player then return end
+    local char = p.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local box = Instance.new("Part")
+        box.Name = "DevHitbox"
+        box.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+        box.Transparency = 0.75
+        box.CanCollide = false
+        box.Anchored = false
+        box.Parent = char
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = box
+        weld.Part1 = char.HumanoidRootPart
+        weld.Parent = box
+        hitboxes[p] = box
+    end
+end
+
+local function toggleHitboxExpander()
+    hitboxOn = not hitboxOn
+    for _,p in pairs(Players:GetPlayers()) do
+        if hitboxOn then
+            createHitboxForPlayer(p)
+        else
+            if hitboxes[p] then
+                hitboxes[p]:Destroy()
+                hitboxes[p] = nil
+            end
         end
     end
+end
+
+-- Slider Frame
+local SliderFrame = Instance.new("Frame", ButtonsFrame)
+SliderFrame.Size = UDim2.new(1,0,0,60)
+SliderFrame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0,10)
+
+local SliderLabel = Instance.new("TextLabel", SliderFrame)
+SliderLabel.Size = UDim2.new(0.4,0,1,0)
+SliderLabel.Text = "Hitbox Size"
+SliderLabel.TextColor3 = Color3.fromRGB(255,255,255)
+SliderLabel.BackgroundTransparency = 1
+SliderLabel.TextScaled = true
+
+local SliderValue = Instance.new("TextBox", SliderFrame)
+SliderValue.Size = UDim2.new(0.2,0,1,0)
+SliderValue.Position = UDim2.new(0.45,0,0,0)
+SliderValue.Text = tostring(hitboxSize)
+SliderValue.ClearTextOnFocus = false
+SliderValue.TextScaled = true
+
+-- Slider Bar (click/drag)
+local SliderBar = Instance.new("Frame", SliderFrame)
+SliderBar.Size = UDim2.new(0.3,0,0.3,0)
+SliderBar.Position = UDim2.new(0.7,0,0.35,0)
+SliderBar.BackgroundColor3 = Color3.fromRGB(100,100,100)
+Instance.new("UICorner", SliderBar).CornerRadius = UDim.new(0,5)
+
+local UserInputService = game:GetService("UserInputService")
+
+local function updateHitboxSize(newSize)
+    hitboxSize = math.clamp(newSize, 1, 10)
+    SliderValue.Text = tostring(hitboxSize)
+    if hitboxOn then
+        for _,p in pairs(hitboxes) do
+            if p then p.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize) end
+        end
+    end
+end
+
+-- When typing in box
+SliderValue.FocusLost:Connect(function(enterPressed)
+    local val = tonumber(SliderValue.Text)
+    if val then updateHitboxSize(val) end
 end)
+
+-- Slider drag
+local dragging = false
+SliderBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+    end
+end)
+SliderBar.InputEnded:Connect(function(input)
+    dragging = false
+end)
+RunService.RenderStepped:Connect(function()
+    if dragging then
+        local mouse = player:GetMouse()
+        local relX = math.clamp((mouse.X - SliderFrame.AbsolutePosition.X)/SliderFrame.AbsoluteSize.X, 0, 1)
+        local newSize = relX * 10
+        updateHitboxSize(newSize)
+    end
+end)
+
+-- Hitbox Toggle Button
+CreateButton("Toggle Hitbox Expander", toggleHitboxExpander)
 
 -- ESP System (updates every second)
 local espParts = {}
 local function createESP(player)
-    if player == player then return end -- skip self
+    if player == player then return end
     local char = player.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         local box = Instance.new("BoxHandleAdornment")
@@ -141,11 +224,8 @@ end
 
 local function updateESP()
     for _,p in pairs(Players:GetPlayers()) do
-        if not espParts[p] then
-            createESP(p)
-        end
+        if not espParts[p] then createESP(p) end
     end
-    -- remove for players that left
     for p,box in pairs(espParts) do
         if not p.Parent then
             box:Destroy()
@@ -153,7 +233,4 @@ local function updateESP()
         end
     end
 end
-
-RunService.RenderStepped:Connect(function()
-    updateESP()
-end)
+RunService.RenderStepped:Connect(updateESP)
